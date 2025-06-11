@@ -3,7 +3,7 @@
 ## Phase 1 – Core Functionality
 
 - [x] Set up Vite + React + TypeScript project (Tailwind CSS also integrated)
-- [ ] Add Leaflet map with basic OpenStreetMap tile layer
+- [x] Add Leaflet map with basic OpenStreetMap tile layer
 - [ ] Load and display GeoJSON areas (e.g. postal zones)
 - [ ] Add Firebase integration (Auth + Firestore)
 - [ ] Allow user to "conquer" a playground (write to Firestore)

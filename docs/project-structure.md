@@ -5,6 +5,8 @@ This document outlines the main directories and file organization of the Playgro
 - `/public` - Static assets that are directly served.
 - `/src` - Main application source code.
   - `/src/assets` - Static assets like images (e.g., `react.svg`).
+  - `/src/components` - Reusable UI components.
+    - `Map.tsx` - The main Leaflet map component.
   - `App.css` - Basic styles for App component (may be removed or refactored).
   - `App.tsx` - Main application component.
   - `index.css` - Global styles and Tailwind CSS import.

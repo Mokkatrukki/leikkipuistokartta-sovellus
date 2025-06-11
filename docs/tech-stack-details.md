@@ -8,7 +8,7 @@ This document provides more detailed information about the technologies used and
 - **TypeScript**: For static typing, improving code quality and maintainability.
 - **Vite**: Build tool for fast development and optimized production builds. Manages module bundling, HMR (Hot Module Replacement), and serving.
 - **Tailwind CSS (v4.x.x via @tailwindcss/vite)**: Utility-first CSS framework for rapid UI development. Configured via `tailwind.config.js` and integrated into Vite via `@tailwindcss/vite` plugin.
-- **Leaflet & react-leaflet**: (To be integrated) For interactive maps.
+- **Leaflet & react-leaflet (v1.9.4 & v5.0.0)**: Integrated for interactive map display. Basic map with OpenStreetMap tiles and a marker is implemented.
 - **vite-plugin-pwa**: (To be integrated) For Progressive Web App features.
 - **clsx**: (To be integrated, if needed) For conditionally joining class names.
 - **uuid**: (To be integrated, if needed) For generating unique identifiers.
