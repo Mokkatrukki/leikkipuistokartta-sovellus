@@ -4,7 +4,8 @@
 
 - [x] Set up Vite + React + TypeScript project (Tailwind CSS also integrated)
 - [x] Add Leaflet map with basic OpenStreetMap tile layer
-- [ ] Load and display GeoJSON areas (e.g. postal zones)
+  - [x] Display city district GeoJSON data (`city-districts.geojson`) with styling and labels.
+- [x] Load and display GeoJSON areas (specifically city districts for now)
 - [ ] Add Firebase integration (Auth + Firestore)
 - [ ] Allow user to "conquer" a playground (write to Firestore)
 - [ ] Show which areas are conquered on the map
