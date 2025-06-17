@@ -17,16 +17,21 @@ const DISTRICT_DISPLAY_ZOOM = 7; // Zoom level to see more of Finland for distri
 
 import type { SelectedDistrictData, DistrictProperties } from '../App'; // Import types from App.tsx
 
+import { getPointFromGeoJsonFeature } from '../utils/geoUtils';
+
+const FOCUSED_PLAYGROUND_ZOOM = 16; // Zoom out a bit (was 18)
+
 interface MapComponentProps {
   onDistrictSelect: (data: SelectedDistrictData | null) => void;
   selectedDistrict: SelectedDistrictData | null; // Prop to know what's in the InfoPanel
+  focusedPlaygroundId: string | null;
 }
 
 import { useDistrictData } from '../hooks/useDistrictData';
 import { usePlaygroundOsmData } from '../hooks/usePlaygroundOsmData';
 import { usePlaygroundAggregator } from '../hooks/usePlaygroundAggregator';
 
-const MapComponent: React.FC<MapComponentProps> = ({ onDistrictSelect, selectedDistrict }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ onDistrictSelect, selectedDistrict, focusedPlaygroundId }) => {
   const { districtData, loading: districtLoading, error: districtError } = useDistrictData();
   // Assuming 'Oulu' is the default or we can pass it dynamically if needed later
   const { playgroundData: rawPlaygroundGeoJson, loading: playgroundLoading, error: playgroundError } = usePlaygroundOsmData('Oulu'); 
@@ -140,6 +145,25 @@ const MapComponent: React.FC<MapComponentProps> = ({ onDistrictSelect, selectedD
       }
     }
   }, [districtDetailedPlaygroundInfo, selectedDistrict, onDistrictSelect]);
+
+  // Effect to fly to a playground when focusedPlaygroundId changes
+  useEffect(() => {
+    if (focusedPlaygroundId && rawPlaygroundGeoJson?.features && mapRef.current) {
+      const map = mapRef.current;
+      // osmtogeojson usually puts the original OSM id (node/xxx, way/xxx, relation/xxx) directly on the feature.id
+      const playgroundFeature = rawPlaygroundGeoJson.features.find(
+        (feature: any) => feature.id === focusedPlaygroundId || feature.properties?.id === focusedPlaygroundId
+      );
+
+      if (playgroundFeature) {
+        const point = getPointFromGeoJsonFeature(playgroundFeature);
+        if (point) {
+          map.flyTo(point, FOCUSED_PLAYGROUND_ZOOM);
+          // Optionally, find and open popup here (more complex)
+        }
+      }
+    }
+  }, [focusedPlaygroundId, rawPlaygroundGeoJson]); // Add mapRef.current to dependency array? Usually not for refs.
 
   return (
     <MapContainer 

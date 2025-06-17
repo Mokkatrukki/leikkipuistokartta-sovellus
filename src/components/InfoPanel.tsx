@@ -4,9 +4,10 @@ import type { SelectedDistrictData, PlaygroundFeatureProperties } from '../App';
 
 interface InfoPanelProps {
   selectedDistrict: SelectedDistrictData | null;
+  onPlaygroundSelect: (id: string | null) => void;
 }
 
-const InfoPanel: React.FC<InfoPanelProps> = ({ selectedDistrict }) => {
+const InfoPanel: React.FC<InfoPanelProps> = ({ selectedDistrict, onPlaygroundSelect }) => {
   if (!selectedDistrict || !selectedDistrict.properties) {
     return (
       <div style={{ padding: '20px', borderLeft: '1px solid #ccc', height: '100vh', overflowY: 'auto' }}>
@@ -18,11 +19,6 @@ const InfoPanel: React.FC<InfoPanelProps> = ({ selectedDistrict }) => {
 
   const districtName = selectedDistrict.properties.NIMI || selectedDistrict.properties.Aj_kaupu_1 || selectedDistrict.properties.name || 'Unknown District';
   const { playgroundInfo } = selectedDistrict;
-
-  // Log the whole featurePropertiesList once to see the array structure
-  if (playgroundInfo?.featurePropertiesList && playgroundInfo.featurePropertiesList.length > 0) {
-    console.log('Raw featurePropertiesList for district:', playgroundInfo.featurePropertiesList);
-  }
 
   const namedPlaygrounds = playgroundInfo?.featurePropertiesList.filter(pg => {
     // Log each playground's properties being checked for 'named'
@@ -44,8 +40,14 @@ const InfoPanel: React.FC<InfoPanelProps> = ({ selectedDistrict }) => {
       <>
         <h4>{title} ({list.length})</h4>
         {list.map((pgProps, index) => (
-          <div key={`${title}-${index}`} style={{ border: '1px solid #eee', padding: '10px', marginBottom: '10px', borderRadius: '4px' }}>
-            <strong>{pgProps.tags?.name || pgProps.name || 'Unnamed Playground'}</strong>
+          <div 
+            key={`${title}-${index}-${pgProps.id}`}
+            style={{ border: '1px solid #eee', padding: '10px', marginBottom: '10px', borderRadius: '4px', cursor: 'pointer' }}
+            onClick={() => onPlaygroundSelect(pgProps.id as string | null)} // Assuming pgProps.id is the unique ID
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f0f0f0')}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+          >
+            <strong>{pgProps.tags?.name || pgProps.name || 'Unnamed Playground'} (ID: {pgProps.id})</strong>
             <pre style={{ fontSize: '0.8em', whiteSpace: 'pre-wrap', wordBreak: 'break-all', backgroundColor: '#f9f9f9', padding: '5px' }}>
               {JSON.stringify(pgProps, null, 2)}
             </pre>

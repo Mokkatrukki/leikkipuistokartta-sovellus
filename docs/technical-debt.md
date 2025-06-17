@@ -22,15 +22,17 @@ This document lists areas of the codebase or features that could be improved, re
     - Investigate performance bottlenecks if they arise.
     - Explore options like map feature simplification or clustering for very dense data.
 
-- **Dynamic Query Scope:**
-  - The Overpass query is currently hardcoded for "Oulu".
+- **Dynamic Query Scope in `usePlaygroundOsmData.ts`:**
+  - The Overpass query is currently hardcoded for "Oulu" (though the hook accepts an `areaName` parameter, it's not dynamically used yet beyond that initial parameter).
   - *Future Improvements:*
-    - Make the query dynamic based on the current map view (bounding box) or user's location (adds complexity).
+    - Allow the `areaName` or other query parameters (like bounding box) to be dynamically changed, causing the hook to re-fetch data.
+    - This could enable features like searching playgrounds in different cities or the currently viewed map area.
 
-- **TypeScript Types for OSM Data:**
-  - Currently, `feature.properties.tags` might be typed loosely.
+- **TypeScript Types for OSM/GeoJSON Data:**
+  - Currently, `feature.properties.tags` and the overall GeoJSON structures (e.g., `DistrictData`, `PlaygroundGeoJsonData` in hooks) are typed loosely (often using `any` or broad `string` for `type`).
   - *Future Improvements:*
-    - Define more specific TypeScript types for OSM feature properties and tags for better type safety.
+    - Define more specific TypeScript types for OSM feature properties, tags, and the expected GeoJSON structures (e.g., using `GeoJSON.FeatureCollection`, `GeoJSON.Feature` from `@types/geojson` or custom, more precise interfaces) for better type safety throughout the data lifecycle.
+    - This would reduce the need for `as any` casts in components like `Map.tsx` when passing data to `<GeoJSON>`.
 
 ## Client-Side Spatial Analysis (Playgrounds in Districts)
 
@@ -42,6 +44,20 @@ This document lists areas of the codebase or features that could be improved, re
     - Optimize client-side calculations (e.g., using spatial indexing if many features).
     - Explore using more specialized client-side spatial libraries like `turf.js` for potentially faster point-in-polygon tests.
     - For very large datasets, consider pre-processing this relationship server-side or during a build step, so the client receives data with pre-calculated counts/associations.
+
+## Map Interaction & Visualization
+
+- **Centroid Calculation for Polygons (`getPointFromGeoJsonFeature`):**
+  - The `getPointFromGeoJsonFeature` utility currently takes a simplified approach for non-Point geometries (e.g., first coordinate of a polygon).
+  - *Future Improvements:*
+    - Implement or use a library function (e.g., from `turf.js`) to calculate a proper centroid for polygons and multi-polygons. This would provide a more accurate center point for `flyTo` operations or placing markers.
+
+- **Focused Playground Highlighting & Popup:**
+  - When a playground is selected from the `InfoPanel`, the map currently only uses `flyTo`.
+  - *Future Improvements:*
+    - Visually highlight the focused playground on the map (e.g., change its style temporarily, add a special marker).
+    - Automatically open the popup for the focused playground.
+    - Implement a mechanism to clear the focus (e.g., clicking the map elsewhere).
 
 ## General
 

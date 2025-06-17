@@ -46,6 +46,13 @@ This document logs significant design decisions, architectural changes, and reas
     - Implemented `usePlaygroundAggregator.ts` to process district and playground data, calculating playground counts and properties per district for both tooltips and the detailed InfoPanel.
     - `Map.tsx` now consumes these hooks, significantly reducing its internal state management and effect logic related to data acquisition and processing.
     - Added basic loading indicators to `Map.tsx` based on state from the new hooks.
+- **Decision/Change (Feature Enhancement):** Implemented interactivity between `InfoPanel` and `MapComponent`. Clicking a playground in the `InfoPanel` now causes the map to `flyTo` and center on that playground's location.
+- **Reason:** To improve the utility of the debug panel by allowing easier visual correlation between listed playground data and its geographical location on the map.
+- **Impact:**
+    - Created `src/utils/geoUtils.ts` and moved `getPointFromGeoJsonFeature` helper into it.
+    - Updated `App.tsx` to manage `focusedPlaygroundId` state, passing it to `MapComponent` and a setter to `InfoPanel`.
+    - `InfoPanel.tsx` now calls `onPlaygroundSelect(playgroundId)` when a playground item is clicked.
+    - `Map.tsx` uses a `useEffect` hook to observe `focusedPlaygroundId`. When it changes, the map finds the playground feature and uses `map.flyTo()` to navigate. The zoom level for this action (`FOCUSED_PLAYGROUND_ZOOM`) was adjusted from 18 to 16 for a better overview.
 
 ## YYYY-MM-DD
 

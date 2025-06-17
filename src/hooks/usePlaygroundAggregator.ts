@@ -3,22 +3,7 @@ import L from 'leaflet'; // For L.geoJSON and L.LatLng, if needed for pointInLay
 import type { DistrictData } from './useDistrictData';
 import type { PlaygroundGeoJsonData } from './usePlaygroundOsmData';
 import type { PlaygroundInfo, PlaygroundFeatureProperties } from '../App'; // Assuming types are exported from App.tsx
-
-// Helper function (can be moved to utils if used elsewhere)
-const getPointFromGeoJsonFeature = (feature: any): L.LatLng | null => {
-  if (!feature?.geometry?.coordinates) return null;
-  if (feature.geometry.type === 'Point') {
-    return L.GeoJSON.coordsToLatLng(feature.geometry.coordinates as [number, number]);
-  }
-  let firstCoord = feature.geometry.coordinates[0];
-  while (Array.isArray(firstCoord) && Array.isArray(firstCoord[0]) && typeof firstCoord[0][0] === 'number') {
-    firstCoord = firstCoord[0];
-  }
-  if (Array.isArray(firstCoord) && firstCoord.length >= 2 && typeof firstCoord[0] === 'number' && typeof firstCoord[1] === 'number') {
-    return L.GeoJSON.coordsToLatLng(firstCoord as [number, number]);
-  }
-  return null;
-};
+import { getPointFromGeoJsonFeature } from '../utils/geoUtils';
 
 export function usePlaygroundAggregator(
   districtData: DistrictData | null,

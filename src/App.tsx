@@ -31,14 +31,22 @@ export interface SelectedDistrictData {
 
 function App() {
   const [selectedDistrict, setSelectedDistrict] = useState<SelectedDistrictData | null>(null);
+  const [focusedPlaygroundId, setFocusedPlaygroundId] = useState<string | null>(null);
 
   return (
     <div className="app-container">
       <div className="map-panel"> {/* Corrected class name */}
-        <MapComponent onDistrictSelect={setSelectedDistrict} selectedDistrict={selectedDistrict} />
+        <MapComponent 
+          onDistrictSelect={setSelectedDistrict} 
+          selectedDistrict={selectedDistrict}
+          focusedPlaygroundId={focusedPlaygroundId} 
+        />
       </div>
       <div className="info-panel"> {/* Corrected class name */}
-        <InfoPanel selectedDistrict={selectedDistrict} />
+        <InfoPanel 
+          selectedDistrict={selectedDistrict} 
+          onPlaygroundSelect={setFocusedPlaygroundId} 
+        />
       </div>
     </div>
   );
