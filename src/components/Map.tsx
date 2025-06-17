@@ -15,10 +15,18 @@ const DEFAULT_POSITION: L.LatLngTuple = [65.0124, 25.4682]; // Oulu coordinates
 const DEFAULT_ZOOM = 13;
 const DISTRICT_DISPLAY_ZOOM = 7; // Zoom level to see more of Finland for districts
 
-const MapComponent: React.FC = () => {
+import type { SelectedDistrictData, PlaygroundInfo, DistrictProperties, PlaygroundFeatureProperties } from '../App'; // Import types from App.tsx
+
+interface MapComponentProps {
+  onDistrictSelect: (data: SelectedDistrictData | null) => void;
+  selectedDistrict: SelectedDistrictData | null; // Prop to know what's in the InfoPanel
+}
+
+const MapComponent: React.FC<MapComponentProps> = ({ onDistrictSelect, selectedDistrict }) => {
   const [districtData, setDistrictData] = useState<any | null>(null);
   const [playgroundData, setPlaygroundData] = useState<any | null>(null);
-  const [districtPlaygroundInfo, setDistrictPlaygroundInfo] = useState<Record<string, { count: number; names: string[] }>>({});
+  const [districtPlaygroundInfo, setDistrictPlaygroundInfo] = useState<Record<string, PlaygroundInfo>>({}); // For tooltips
+  const [districtDetailedPlaygroundInfo, setDistrictDetailedPlaygroundInfo] = useState<Record<string, PlaygroundInfo>>({}); // For InfoPanel
   const mapRef = useRef<L.Map | null>(null);
 
   // Fetch district data
@@ -87,28 +95,47 @@ const MapComponent: React.FC = () => {
   // Calculate playground counts per district
   useEffect(() => {
     if (districtData?.features && playgroundData?.features) {
-      const newInfo: Record<string, { count: number; names: string[] }> = {};
+      const newTooltipData: Record<string, PlaygroundInfo> = {};
+      const newDetailedData: Record<string, PlaygroundInfo> = {};
+
       districtData.features.forEach((districtFeature: any) => {
-        const districtName = districtFeature.properties?.Aj_kaupu_1 || districtFeature.properties?.NIMI || districtFeature.properties?.name || 'Unknown District';
-        if (!newInfo[districtName]) {
-          newInfo[districtName] = { count: 0, names: [] };
+        const districtNameKey = districtFeature.properties?.Aj_kaupu_1 || districtFeature.properties?.NIMI || districtFeature.properties?.name || 'Unknown District';
+        
+        if (!newTooltipData[districtNameKey]) {
+          newTooltipData[districtNameKey] = { count: 0, featurePropertiesList: [] };
         }
-        // Create a temporary Leaflet layer for the district to use .getBounds() and .contains()
+        if (!newDetailedData[districtNameKey]) {
+          newDetailedData[districtNameKey] = { count: 0, featurePropertiesList: [] };
+        }
+
         const districtGeoJsonLayer = L.geoJSON(districtFeature);
         const districtBounds = districtGeoJsonLayer.getBounds();
 
         playgroundData.features.forEach((playgroundFeature: any) => {
           const playgroundPoint = getPointFromGeoJsonFeature(playgroundFeature);
           if (playgroundPoint && districtBounds.contains(playgroundPoint)) {
-            newInfo[districtName].count++;
-            const playgroundName = playgroundFeature.properties?.tags?.name || 'Unnamed Playground';
-            if (newInfo[districtName].names.length < 3) { // Limit to 3 names in the list
-              newInfo[districtName].names.push(playgroundName);
+            newTooltipData[districtNameKey].count++;
+            newDetailedData[districtNameKey].count++;
+            
+            const currentPlaygroundProperties = playgroundFeature.properties as PlaygroundFeatureProperties;
+
+            // For Tooltip: Add properties of up to 3 unique named playgrounds
+            // (Tooltip will then extract names from these properties)
+            if (newTooltipData[districtNameKey].featurePropertiesList.length < 3) {
+              const name = currentPlaygroundProperties.tags?.name;
+              if (name && !newTooltipData[districtNameKey].featurePropertiesList.some(p => p.tags?.name === name)) {
+                 newTooltipData[districtNameKey].featurePropertiesList.push(currentPlaygroundProperties);
+              }
             }
+
+            // For Detailed InfoPanel: Add all playground properties
+            // (InfoPanel can then filter/display as needed, including unnamed ones for debugging)
+            newDetailedData[districtNameKey].featurePropertiesList.push(currentPlaygroundProperties);
           }
         });
       });
-      setDistrictPlaygroundInfo(newInfo);
+      setDistrictPlaygroundInfo(newTooltipData);
+      setDistrictDetailedPlaygroundInfo(newDetailedData);
     }
   }, [districtData, playgroundData]);
 
@@ -135,8 +162,19 @@ const MapComponent: React.FC = () => {
       opacity: 0.9,
     });
 
-    // Bind popup for click (original functionality)
-    layer.bindPopup(`District: ${districtName}`);
+    // When a district feature is clicked, call onDistrictSelect
+    layer.on('click', () => {
+      const districtNameKey = feature.properties?.Aj_kaupu_1 || feature.properties?.NIMI || feature.properties?.name || 'Unknown District';
+      const detailedPlaygroundInfoForClick = districtDetailedPlaygroundInfo[districtNameKey] || { count: 0, featurePropertiesList: [] };
+      
+      onDistrictSelect({
+        properties: feature.properties as DistrictProperties,
+        playgroundInfo: detailedPlaygroundInfoForClick
+      });
+    });
+
+    // Bind popup for click (original functionality) - can be kept or removed if info panel is primary
+    // layer.bindPopup(`District: ${districtName}`); // Keeping it for now, can be removed.
   };
 
   // Effect to update district tooltips when districtPlaygroundInfo is ready
@@ -153,22 +191,51 @@ const MapComponent: React.FC = () => {
           let newTooltipContent = districtNameKey;
           if (info && info.count > 0) {
             newTooltipContent += `<br/>🏞️ ${info.count} playground${info.count > 1 ? 's' : ''}`;
-            if (info.names.length > 0) {
-              newTooltipContent += `: ${info.names.join(', ')}${info.count > info.names.length ? '...' : ''}`;
+            // Extract up to 3 names from the featurePropertiesList for the tooltip
+            const tooltipNames = info.featurePropertiesList
+              .map(p => p.tags?.name)
+              .filter((name): name is string => !!name) // Filter out undefined/empty names and ensure type is string
+              .slice(0, 3);
+            if (tooltipNames.length > 0) {
+              newTooltipContent += `: ${tooltipNames.join(', ')}${info.featurePropertiesList.length > 3 && info.count > 3 ? '...' : ''}`;
             }
-            // Ensure the layer can have setTooltipContent (usually GeoJSON layers can)
             if (typeof (layer as any).setTooltipContent === 'function') {
               (layer as any).setTooltipContent(newTooltipContent);
             }
-          } else if (info) { // Info exists but count is 0, or no names
+          } else if (info) { // Info exists but count is 0
              if (typeof (layer as any).setTooltipContent === 'function') {
-              (layer as any).setTooltipContent(newTooltipContent); // Ensure it's at least the name
+              (layer as any).setTooltipContent(newTooltipContent);
             }
           }
         }
       });
     }
   }, [districtPlaygroundInfo]); // Rerun when info changes
+
+  // Effect to update InfoPanel if its selected district's playground data gets populated/updated
+  useEffect(() => {
+    // This effect now uses districtDetailedPlaygroundInfo to refresh the InfoPanel
+    if (selectedDistrict && selectedDistrict.properties && Object.keys(districtDetailedPlaygroundInfo).length > 0) {
+      const districtNameKey = selectedDistrict.properties.Aj_kaupu_1 || selectedDistrict.properties.NIMI || selectedDistrict.properties.name || 'Unknown District';
+      const latestDetailedPlaygroundInfo = districtDetailedPlaygroundInfo[districtNameKey];
+
+      if (latestDetailedPlaygroundInfo) {
+        const panelInfo = selectedDistrict.playgroundInfo;
+        if (
+          !panelInfo || 
+          panelInfo.count !== latestDetailedPlaygroundInfo.count || 
+          // Compare based on a sorted list of names derived from featurePropertiesList for stability
+          JSON.stringify(panelInfo.featurePropertiesList.map(p => p.tags?.name).sort()) !== 
+          JSON.stringify(latestDetailedPlaygroundInfo.featurePropertiesList.map(p => p.tags?.name).sort())
+        ) {
+          onDistrictSelect({
+            properties: selectedDistrict.properties,
+            playgroundInfo: latestDetailedPlaygroundInfo
+          });
+        }
+      }
+    }
+  }, [districtDetailedPlaygroundInfo, selectedDistrict, onDistrictSelect]);
 
   return (
     <MapContainer 

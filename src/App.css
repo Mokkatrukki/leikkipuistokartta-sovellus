@@ -1,1 +1,23 @@
 /* Styles removed to allow full-page map display */
+
+.app-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden; /* Prevent scrollbars on the body */
+}
+
+.map-panel {
+  flex: 2; /* Map takes up 2/3 of the space */
+  height: 100%;
+  overflow: hidden; /* Ensure map doesn't cause scrollbars if it tries to exceed panel */
+}
+
+.info-panel {
+  flex: 1; /* Info panel takes up 1/3 of the space */
+  height: 100vh; /* Full viewport height */
+  overflow-y: auto; /* Allow scrolling within the info panel if content exceeds height */
+  padding: 10px;
+  border-left: 1px solid #ccc;
+  box-sizing: border-box; /* Include padding and border in the element's total width and height */
+}

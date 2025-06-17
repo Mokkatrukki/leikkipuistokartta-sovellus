@@ -18,6 +18,26 @@
 
 This document logs significant design decisions, architectural changes, and reasons behind them throughout the project lifecycle.
 
+## 2025-06-17
+
+- **Decision/Change:** Implemented a two-panel user interface for development/debugging purposes. The left panel displays the interactive map (`MapComponent`), and the right panel (`InfoPanel.tsx`) displays detailed information about a selected map district, including raw properties and a categorized list of its playgrounds.
+- **Reason:** To provide a dedicated and clear space for inspecting detailed map data (district properties, playground counts, individual playground properties) without cluttering the main map view. This aids in debugging data fetching, processing, and display logic.
+- **Impact:**
+    - Created `src/components/InfoPanel.tsx` to render details of a selected district.
+    - Modified `src/App.tsx` to manage the state of the selected district and arrange `MapComponent` and `InfoPanel` in a two-column flex layout (styled via `App.css`).
+    - Updated `MapComponent.tsx`:
+        - To accept an `onDistrictSelect` callback and a `selectedDistrict` prop from `App.tsx`.
+        - To call `onDistrictSelect` when a district is clicked on the map, passing its properties and detailed playground information.
+        - Added a `useEffect` hook to refresh the `InfoPanel` if playground data for the selected district is updated asynchronously after the initial click.
+        - Separated internal state for playground information: `districtPlaygroundInfo` (for concise map tooltips) and `districtDetailedPlaygroundInfo` (providing full feature properties for all playgrounds in a district to the `InfoPanel`).
+    - Updated `InfoPanel.tsx` to:
+        - Receive selected district data (including the comprehensive `featurePropertiesList` for playgrounds).
+        - Categorize and display playgrounds as "Named Playgrounds" or "Unnamed Playgrounds / No Name Tag".
+        - Display the full raw properties object for each playground for detailed inspection.
+        - Adjusted name detection to check both `feature.properties.name` and `feature.properties.tags.name` based on observed OSM data patterns.
+    - Created `docs/osm_playground_data_structure.md` to document findings about the structure of playground data from Overpass API for Oulu.
+    - The developer experience is improved by having a clear, structured way to inspect underlying map data during development.
+
 ## YYYY-MM-DD
 
 - **Decision/Change:** 
