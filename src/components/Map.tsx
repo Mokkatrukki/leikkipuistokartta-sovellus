@@ -109,7 +109,6 @@ const MapComponent: React.FC = () => {
         });
       });
       setDistrictPlaygroundInfo(newInfo);
-      // console.log('Calculated District Playground Info:', newInfo); // For debugging
     }
   }, [districtData, playgroundData]);
 
@@ -144,7 +143,6 @@ const MapComponent: React.FC = () => {
   useEffect(() => {
     const map = mapRef.current;
     if (map && Object.keys(districtPlaygroundInfo).length > 0) {
-      // console.log('Attempting to update tooltips with info:', districtPlaygroundInfo); // For debugging
       map.eachLayer((layer) => {
         // Check if this layer is a district layer (has featureProperties we set)
         const props = (layer as any).featureProperties;
