@@ -37,6 +37,15 @@ This document logs significant design decisions, architectural changes, and reas
         - Adjusted name detection to check both `feature.properties.name` and `feature.properties.tags.name` based on observed OSM data patterns.
     - Created `docs/osm_playground_data_structure.md` to document findings about the structure of playground data from Overpass API for Oulu.
     - The developer experience is improved by having a clear, structured way to inspect underlying map data during development.
+- **Decision/Change (Refactor):** Refactored `Map.tsx` to delegate data fetching and processing logic to custom React hooks.
+- **Reason:** To improve separation of concerns, reduce the complexity of `Map.tsx`, enhance readability, and make data handling logic more modular and testable. This aligns with the goal of keeping view components lean and data logic centralized.
+- **Impact:**
+    - Created `src/hooks/` directory.
+    - Implemented `useDistrictData.ts` to fetch city district GeoJSON.
+    - Implemented `usePlaygroundOsmData.ts` to fetch and convert playground data from Overpass API to GeoJSON.
+    - Implemented `usePlaygroundAggregator.ts` to process district and playground data, calculating playground counts and properties per district for both tooltips and the detailed InfoPanel.
+    - `Map.tsx` now consumes these hooks, significantly reducing its internal state management and effect logic related to data acquisition and processing.
+    - Added basic loading indicators to `Map.tsx` based on state from the new hooks.
 
 ## YYYY-MM-DD
 

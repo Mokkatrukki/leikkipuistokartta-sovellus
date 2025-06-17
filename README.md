@@ -11,6 +11,7 @@ An interactive, family-friendly web app that encourages kids and parents to visi
 - Simple voting: like / dislike
 - Works offline as a PWA
 - User login via Firebase (anonymous or optional OAuth)
+- Two-panel development view with map and detailed data inspector for debugging
 
 ## 🌍 Target Users
 
@@ -26,6 +27,7 @@ An interactive, family-friendly web app that encourages kids and parents to visi
 - **Hosting:** Firebase Hosting
 - **Offline support:** PWA via vite-plugin-pwa
 - **Optional mobile packaging:** Capacitor.js
+- **Data Management:** Custom React Hooks for fetching, processing, and managing map-related data (districts, playgrounds)
 
 ## 🚀 Deployment
 
