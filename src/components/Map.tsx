@@ -1,7 +1,7 @@
 import { MapContainer, TileLayer, Marker, Popup, GeoJSON } from 'react-leaflet';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import L from 'leaflet';
-import osmtogeojson from 'osmtogeojson';
+// osmtogeojson is now used within usePlaygroundOsmData hook
 
 // Fix for default marker icon issue with Webpack/Vite
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -15,129 +15,33 @@ const DEFAULT_POSITION: L.LatLngTuple = [65.0124, 25.4682]; // Oulu coordinates
 const DEFAULT_ZOOM = 13;
 const DISTRICT_DISPLAY_ZOOM = 7; // Zoom level to see more of Finland for districts
 
-import type { SelectedDistrictData, PlaygroundInfo, DistrictProperties, PlaygroundFeatureProperties } from '../App'; // Import types from App.tsx
+import type { SelectedDistrictData, DistrictProperties } from '../App'; // Import types from App.tsx
 
 interface MapComponentProps {
   onDistrictSelect: (data: SelectedDistrictData | null) => void;
   selectedDistrict: SelectedDistrictData | null; // Prop to know what's in the InfoPanel
 }
 
+import { useDistrictData } from '../hooks/useDistrictData';
+import { usePlaygroundOsmData } from '../hooks/usePlaygroundOsmData';
+import { usePlaygroundAggregator } from '../hooks/usePlaygroundAggregator';
+
 const MapComponent: React.FC<MapComponentProps> = ({ onDistrictSelect, selectedDistrict }) => {
-  const [districtData, setDistrictData] = useState<any | null>(null);
-  const [playgroundData, setPlaygroundData] = useState<any | null>(null);
-  const [districtPlaygroundInfo, setDistrictPlaygroundInfo] = useState<Record<string, PlaygroundInfo>>({}); // For tooltips
-  const [districtDetailedPlaygroundInfo, setDistrictDetailedPlaygroundInfo] = useState<Record<string, PlaygroundInfo>>({}); // For InfoPanel
+  const { districtData, loading: districtLoading, error: districtError } = useDistrictData();
+  // Assuming 'Oulu' is the default or we can pass it dynamically if needed later
+  const { playgroundData: rawPlaygroundGeoJson, loading: playgroundLoading, error: playgroundError } = usePlaygroundOsmData('Oulu'); 
+  const { districtPlaygroundInfo, districtDetailedPlaygroundInfo, processing: aggregationProcessing } = usePlaygroundAggregator(districtData, rawPlaygroundGeoJson);
+
   const mapRef = useRef<L.Map | null>(null);
 
-  // Fetch district data
+  // Handle loading and error states from hooks (optional, for now just logging)
   useEffect(() => {
-    fetch('/data/city-districts.geojson')
-      .then((response) => {
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        return response.json();
-      })
-      .then(setDistrictData)
-      .catch((error) => {
-        console.error("Could not fetch city-districts.geojson data:", error);
-        setDistrictData(null);
-      });
-  }, []);
+    if (districtError) console.error("Error fetching district data:", districtError);
+    if (playgroundError) console.error("Error fetching playground data:", playgroundError);
+  }, [districtError, playgroundError]);
 
-  // Fetch playground data from Overpass API
-  useEffect(() => {
-    const overpassQuery = `
-      [out:json][timeout:25];
-      area["name"="Oulu"]->.a;
-      (
-        node["leisure"="playground"](area.a);
-        way["leisure"="playground"](area.a);
-        relation["leisure"="playground"](area.a);
-      );
-      out body;
-      >;
-      out skel qt;
-    `;
-    const overpassUrl = "https://overpass-api.de/api/interpreter?data=" + encodeURIComponent(overpassQuery);
-
-    fetch(overpassUrl)
-      .then((response) => {
-        if (!response.ok) throw new Error(`Overpass API HTTP error! status: ${response.status}`);
-        return response.json();
-      })
-      .then((osmData) => {
-        const geojsonData = osmtogeojson(osmData);
-        setPlaygroundData(geojsonData);
-      })
-      .catch((error) => {
-        console.error("Could not fetch or process playground data:", error);
-        setPlaygroundData(null);
-      });
-  }, []);
-
-  // Helper to get a representative point from a GeoJSON feature
-  const getPointFromGeoJsonFeature = (feature: any): L.LatLng | null => {
-    if (!feature?.geometry?.coordinates) return null;
-    if (feature.geometry.type === 'Point') {
-      return L.GeoJSON.coordsToLatLng(feature.geometry.coordinates as [number, number]);
-    }
-    // For LineString, Polygon, MultiPolygon, take the first coordinate of the first part.
-    // This is a simplification; a centroid would be more accurate for complex shapes.
-    let firstCoord = feature.geometry.coordinates[0];
-    while (Array.isArray(firstCoord) && Array.isArray(firstCoord[0]) && typeof firstCoord[0][0] === 'number') { // Descend for MultiPolygon, etc.
-      firstCoord = firstCoord[0];
-    }
-     if (Array.isArray(firstCoord) && firstCoord.length >= 2 && typeof firstCoord[0] === 'number' && typeof firstCoord[1] === 'number') {
-      return L.GeoJSON.coordsToLatLng(firstCoord as [number, number]);
-    }
-    return null;
-  };
-
-  // Calculate playground counts per district
-  useEffect(() => {
-    if (districtData?.features && playgroundData?.features) {
-      const newTooltipData: Record<string, PlaygroundInfo> = {};
-      const newDetailedData: Record<string, PlaygroundInfo> = {};
-
-      districtData.features.forEach((districtFeature: any) => {
-        const districtNameKey = districtFeature.properties?.Aj_kaupu_1 || districtFeature.properties?.NIMI || districtFeature.properties?.name || 'Unknown District';
-        
-        if (!newTooltipData[districtNameKey]) {
-          newTooltipData[districtNameKey] = { count: 0, featurePropertiesList: [] };
-        }
-        if (!newDetailedData[districtNameKey]) {
-          newDetailedData[districtNameKey] = { count: 0, featurePropertiesList: [] };
-        }
-
-        const districtGeoJsonLayer = L.geoJSON(districtFeature);
-        const districtBounds = districtGeoJsonLayer.getBounds();
-
-        playgroundData.features.forEach((playgroundFeature: any) => {
-          const playgroundPoint = getPointFromGeoJsonFeature(playgroundFeature);
-          if (playgroundPoint && districtBounds.contains(playgroundPoint)) {
-            newTooltipData[districtNameKey].count++;
-            newDetailedData[districtNameKey].count++;
-            
-            const currentPlaygroundProperties = playgroundFeature.properties as PlaygroundFeatureProperties;
-
-            // For Tooltip: Add properties of up to 3 unique named playgrounds
-            // (Tooltip will then extract names from these properties)
-            if (newTooltipData[districtNameKey].featurePropertiesList.length < 3) {
-              const name = currentPlaygroundProperties.tags?.name;
-              if (name && !newTooltipData[districtNameKey].featurePropertiesList.some(p => p.tags?.name === name)) {
-                 newTooltipData[districtNameKey].featurePropertiesList.push(currentPlaygroundProperties);
-              }
-            }
-
-            // For Detailed InfoPanel: Add all playground properties
-            // (InfoPanel can then filter/display as needed, including unnamed ones for debugging)
-            newDetailedData[districtNameKey].featurePropertiesList.push(currentPlaygroundProperties);
-          }
-        });
-      });
-      setDistrictPlaygroundInfo(newTooltipData);
-      setDistrictDetailedPlaygroundInfo(newDetailedData);
-    }
-  }, [districtData, playgroundData]);
+  // The rest of the component uses districtData, rawPlaygroundGeoJson, 
+  // districtPlaygroundInfo, and districtDetailedPlaygroundInfo from the hooks.
 
   const geoJsonDistrictStyle = () => ({
     fillColor: 'rgba(255, 0, 0, 0.3)',
@@ -254,21 +158,28 @@ const MapComponent: React.FC<MapComponentProps> = ({ onDistrictSelect, selectedD
           Playground Conquest! <br /> Oulu Center.
         </Popup>
       </Marker>
-      {districtData && (
+      {/* Display loading indicators or error messages based on hook states */}
+      {(districtLoading || playgroundLoading || aggregationProcessing) && 
+        <div style={{position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 1000, background: 'rgba(255,255,255,0.8)', padding: '20px', borderRadius: '8px'}}>Loading map data...</div>}
+      
+      {/* Render District GeoJSON layer once data is available */}
+      {!districtLoading && districtData && (
         <GeoJSON 
-          data={districtData} 
+          data={districtData as any} // Cast to any to satisfy GeoJSON component, or refine DistrictData type
           style={geoJsonDistrictStyle} 
           onEachFeature={onEachDistrictFeature} 
         />
       )}
-      {playgroundData && (
+
+      {/* Render Playground GeoJSON layer once data is available */}
+      {!playgroundLoading && rawPlaygroundGeoJson && (
         <GeoJSON
-          data={playgroundData}
+          data={rawPlaygroundGeoJson as any} // Cast to any for consistency, or refine PlaygroundGeoJsonData type
           onEachFeature={(feature, layer) => {
-            const name = feature.properties?.tags?.name || "Playground";
+            const name = feature.properties?.tags?.name || feature.properties?.name || "Playground"; // Check direct name too
             layer.bindPopup(name);
           }}
-          pointToLayer={(_feature, latlng) => // _feature to denote unused param
+          pointToLayer={(_feature, latlng) => 
             L.circleMarker(latlng, {
               radius: 6,
               fillColor: "#f90", // Orange
