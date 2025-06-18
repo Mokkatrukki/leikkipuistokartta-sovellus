@@ -27,7 +27,7 @@ An interactive, family-friendly web app that encourages kids and parents to visi
 - **Hosting:** Firebase Hosting
 - **Offline support:** PWA via vite-plugin-pwa
 - **Optional mobile packaging:** Capacitor.js
-- **Data Management:** Custom React Hooks for fetching, processing, and managing map-related data (districts, playgrounds)
+- **Data Management:** Utilizes a consolidated GeoJSON file per city (e.g., `public/data/oulu.geojson`) containing both district and playground data. A custom React Hook (`useCityData.ts`) fetches and processes this file.
 
 ## 🚀 Deployment
 

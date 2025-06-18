@@ -43,11 +43,11 @@ const InfoPanel: React.FC<InfoPanelProps> = ({ selectedDistrict, onPlaygroundSel
           <div 
             key={`${title}-${index}-${pgProps.id}`}
             style={{ border: '1px solid #eee', padding: '10px', marginBottom: '10px', borderRadius: '4px', cursor: 'pointer' }}
-            onClick={() => onPlaygroundSelect(pgProps.id as string | null)} // Assuming pgProps.id is the unique ID
+            onClick={() => onPlaygroundSelect(pgProps['@id'] as string | null)} // Use '@id' for selection
             onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f0f0f0')}
             onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
           >
-            <strong>{pgProps.tags?.name || pgProps.name || 'Unnamed Playground'} (ID: {pgProps.id})</strong>
+            <strong>{pgProps.tags?.name || pgProps.name || 'Unnamed Playground'} (ID: {pgProps['@id'] || pgProps.id || 'N/A'})</strong>
             <pre style={{ fontSize: '0.8em', whiteSpace: 'pre-wrap', wordBreak: 'break-all', backgroundColor: '#f9f9f9', padding: '5px' }}>
               {JSON.stringify(pgProps, null, 2)}
             </pre>

@@ -9,9 +9,7 @@ This document outlines the main directories and file organization of the Playgro
     - `Map.tsx` - The main Leaflet map component.
     - `InfoPanel.tsx` - Component to display detailed debug information for selected map features.
   - `/src/hooks` - Custom React hooks for encapsulating reusable stateful logic, especially data fetching and processing.
-    - `useDistrictData.ts` - Hook to fetch city district GeoJSON data.
-    - `usePlaygroundOsmData.ts` - Hook to fetch and process playground data from Overpass API.
-    - `usePlaygroundAggregator.ts` - Hook to aggregate and combine district and playground data.
+    - `useCityData.ts` - Hook to fetch and process a consolidated GeoJSON file for a city (containing both districts and playgrounds).
   - `App.css` - Basic styles for App component (may be removed or refactored).
   - `App.tsx` - Main application component.
   - `index.css` - Global styles and Tailwind CSS import.

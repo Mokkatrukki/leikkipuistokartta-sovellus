@@ -54,6 +54,20 @@ This document logs significant design decisions, architectural changes, and reas
     - `InfoPanel.tsx` now calls `onPlaygroundSelect(playgroundId)` when a playground item is clicked.
     - `Map.tsx` uses a `useEffect` hook to observe `focusedPlaygroundId`. When it changes, the map finds the playground feature and uses `map.flyTo()` to navigate. The zoom level for this action (`FOCUSED_PLAYGROUND_ZOOM`) was adjusted from 18 to 16 for a better overview.
 
+## 2025-06-18
+
+- **Decision/Change (Refactor):** Major refactoring of data fetching and management. Consolidated all city-level geographic data (districts and playgrounds) into a single GeoJSON file per city (e.g., `public/data/oulu.geojson`). Introduced a new generic hook `useCityData.ts` to fetch and process this file, providing filtered `playgroundsData` and `districtsData`.
+- **Reason:** To simplify data sources, reduce API calls (previously fetching districts and playgrounds separately, with playgrounds from Overpass API), improve performance by using static GeoJSON, and streamline the data flow within the application. This also makes it easier to support multiple cities in the future by just adding new GeoJSON files.
+- **Impact:**
+    - Created `src/hooks/useCityData.ts` which now handles fetching a city-specific GeoJSON file (e.g., `oulu.geojson`) and provides memoized `playgroundsData` and `districtsData` using standard GeoJSON types.
+    - Removed old data hooks: `useDistrictData.ts`, `usePlaygroundOsmData.ts`, and `usePlaygroundAggregator.ts`.
+    - `App.tsx` now uses `useCityData` as the primary source for map data. It manages `selectedDistrict` state and passes necessary data and callbacks to `MapComponent` and `InfoPanel`.
+    - `MapComponent.tsx` was refactored to accept all data via props. It handles district click events by passing the clicked district feature and a pre-filtered list of playgrounds within it to `App.tsx`. The logic for displaying playground counts in district tooltips was moved into this component.
+    - `InfoPanel.tsx`'s core functionality remained compatible, with minor updates to ensure it uses the correct feature IDs (e.g., `properties['@id']`) for interactions like `flyTo`.
+    - The `flyTo` functionality was updated in both `InfoPanel.tsx` (to send the correct ID) and `MapComponent.tsx` (to find features by `properties['@id']`).
+    - Overall application structure is cleaner, with a more centralized and predictable data flow.
+    - Dependency on `osmtogeojson` is effectively removed as direct Overpass API conversion is no longer performed client-side for primary data loading.
+
 ## YYYY-MM-DD
 
 - **Decision/Change:** 
