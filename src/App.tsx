@@ -77,9 +77,29 @@ function App() {
     setSelectedDistrict(newSelectedDistrictData);
   };
   const [focusedPlaygroundId, setFocusedPlaygroundId] = useState<string | null>(null);
+  const [currentViewportDistrictName, setCurrentViewportDistrictName] = useState<string | null>(null);
+  const [viewportPlaygrounds, setViewportPlaygrounds] = useState<CityGeoJsonFeature[]>([]);
 
   return (
     <div className="app-container">
+      <div className="app-header">
+        <h1>{currentViewportDistrictName || "Playground Conquest"}</h1>
+        {currentViewportDistrictName && viewportPlaygrounds.length > 0 && (
+          <div className="playground-icons">
+            {viewportPlaygrounds.map((pg, index) => (
+              <span 
+                key={pg.properties?.['@id'] || index} 
+                role="img" 
+                aria-label="playground icon" 
+                style={{ marginRight: '2px', cursor: 'pointer' }} 
+                onClick={() => setFocusedPlaygroundId(pg.properties?.['@id'] as string || null)}
+              >
+                🏞️
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
       <div className="map-panel"> {/* Corrected class name */}
         <MapComponent
             playgroundsData={playgroundsData}
@@ -89,6 +109,11 @@ function App() {
             onDistrictSelect={handleDistrictSelect}
             selectedDistrictFeature={districtsData?.features.find(f => f.properties?.name === selectedDistrict?.properties?.name && f.id === (selectedDistrict?.properties as any)?.id) || null}
             focusedPlaygroundId={focusedPlaygroundId}
+            onViewportDistrictChange={(name, playgrounds) => {
+              setCurrentViewportDistrictName(name);
+              setViewportPlaygrounds(playgrounds);
+            }}
+            viewportDistrictName={currentViewportDistrictName}
           />
       </div>
       <div className="info-panel"> {/* Corrected class name */}

@@ -16,8 +16,8 @@ import { getPointFromGeoJsonFeature } from '../utils/geoUtils';
 import type { CityGeoJsonData, CityGeoJsonFeature } from '../hooks/useCityData';
 
 const FOCUSED_PLAYGROUND_ZOOM = 16;
-const DEFAULT_POSITION_MAP: L.LatLngTuple = [65.0124, 25.4682]; // Oulu coordinates
-const DEFAULT_ZOOM_MAP = 13;
+const DEFAULT_POSITION_MAP: L.LatLngTuple = [65.060, 25.440]; // Approx. Kuivasjärvi, Oulu
+const DEFAULT_ZOOM_MAP = 15; // Zoom closer
 const DISTRICT_DISPLAY_ZOOM_MAP = 7;
 
 interface MapComponentProps {
@@ -28,6 +28,8 @@ interface MapComponentProps {
   onDistrictSelect: (districtFeature: CityGeoJsonFeature | null, playgroundsInDistrict: CityGeoJsonFeature[]) => void;
   selectedDistrictFeature: CityGeoJsonFeature | null;
   focusedPlaygroundId: string | null;
+  onViewportDistrictChange: (districtName: string | null, playgroundsInViewport: CityGeoJsonFeature[]) => void;
+  viewportDistrictName: string | null; // District currently at map center
 }
 
 const MapComponent: React.FC<MapComponentProps> = ({
@@ -38,6 +40,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
   onDistrictSelect,
   selectedDistrictFeature,
   focusedPlaygroundId,
+  onViewportDistrictChange,
+  viewportDistrictName,
 }) => {
   const mapRef = useRef<L.Map | null>(null);
 
@@ -45,13 +49,35 @@ const MapComponent: React.FC<MapComponentProps> = ({
     if (error) console.error("Error loading map data:", error);
   }, [error]);
 
-  const geoJsonDistrictStyle = (feature?: CityGeoJsonFeature) => ({
-    fillColor: feature && selectedDistrictFeature && feature.id === selectedDistrictFeature.id ? 'rgba(0, 0, 255, 0.5)' : 'rgba(255, 0, 0, 0.3)',
-    weight: 1,
-    opacity: 1,
-    color: feature && selectedDistrictFeature && feature.id === selectedDistrictFeature.id ? 'blue' : 'red',
-    fillOpacity: 0.3,
-  });
+  const geoJsonDistrictStyle = (feature?: CityGeoJsonFeature) => {
+    const districtName = feature?.properties?.name || feature?.properties?.NIMI || feature?.properties?.Aj_kaupu_1;
+    let style = {
+      fillColor: 'rgba(255, 0, 0, 0.3)', // Default: light red
+      color: 'red',                     // Default: red
+      weight: 1,
+      opacity: 1,
+      fillOpacity: 0.3,
+    };
+
+    if (feature && viewportDistrictName && districtName === viewportDistrictName) {
+      style = {
+        ...style,
+        fillColor: 'rgba(0, 255, 0, 0.3)', // Viewport: light green
+        color: 'green',                   // Viewport: green
+        weight: 2, // Slightly thicker border for viewport district
+      };
+    }
+
+    if (feature && selectedDistrictFeature && feature.id === selectedDistrictFeature.id) {
+      style = {
+        ...style,
+        fillColor: 'rgba(0, 0, 255, 0.5)', // Selected: light blue
+        color: 'blue',                    // Selected: blue
+        weight: 2, // Thicker border for selected district
+      };
+    }
+    return style;
+  };
 
   const onEachDistrictFeature = (feature: CityGeoJsonFeature, layer: L.Layer) => {
     const districtName = feature.properties?.name || feature.properties?.NIMI || feature.properties?.Aj_kaupu_1 || 'Unknown District';
@@ -148,6 +174,57 @@ const MapComponent: React.FC<MapComponentProps> = ({
       }
     }
   }, [focusedPlaygroundId, playgroundsData]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !districtsData || !districtsData.features || !onViewportDistrictChange) {
+      return;
+    }
+
+    const handleMoveEnd = () => {
+      const center = map.getCenter();
+      // Turf.js expects [longitude, latitude]
+      const centerPoint = turf.point([center.lng, center.lat]); 
+
+      let currentDistrictName: string | null = null;
+      for (const district of districtsData.features) {
+        // Ensure district is a valid GeoJSON Feature with Polygon or MultiPolygon geometry for Turf
+        if (district.geometry && (district.geometry.type === 'Polygon' || district.geometry.type === 'MultiPolygon')) {
+          const districtFeature = district as GeoJsonFeature<Polygon | MultiPolygon>;
+          if (turf.booleanPointInPolygon(centerPoint, districtFeature)) {
+            currentDistrictName = district.properties?.name || district.properties?.NIMI || district.properties?.Aj_kaupu_1 || 'Unknown District';
+            break; // Found the district
+          }
+        }
+      }
+      let playgroundsInCurrentDistrict: CityGeoJsonFeature[] = [];
+      if (currentDistrictName && districtsData?.features && playgroundsData?.features) {
+        const currentDistrictFeature = districtsData.features.find(d => (d.properties?.name || d.properties?.NIMI || d.properties?.Aj_kaupu_1) === currentDistrictName);
+        if (currentDistrictFeature && currentDistrictFeature.geometry) {
+          playgroundsInCurrentDistrict = playgroundsData.features.filter(pg => {
+            if (!pg.geometry) return false;
+            let pointToCheck: GeoJsonFeature<Point> | Position | null = null;
+            if (pg.geometry.type === 'Point') {
+              pointToCheck = pg.geometry.coordinates as Position;
+            } else if (pg.geometry.type === 'Polygon' || pg.geometry.type === 'MultiPolygon') {
+              pointToCheck = turf.centroid(pg as GeoJsonFeature<Polygon | MultiPolygon>);
+            }
+            // Ensure the playground feature is a valid GeoJSON feature for Turf
+            return pointToCheck && turf.booleanPointInPolygon(pointToCheck, currentDistrictFeature as GeoJsonFeature<Polygon | MultiPolygon>);
+          }) as CityGeoJsonFeature[]; // Cast the result
+        }
+      }
+      onViewportDistrictChange(currentDistrictName, playgroundsInCurrentDistrict);
+    };
+
+    map.on('moveend', handleMoveEnd);
+    // Initial check when map loads or districtsData changes
+    handleMoveEnd(); 
+
+    return () => {
+      map.off('moveend', handleMoveEnd);
+    };
+  }, [mapRef, districtsData, onViewportDistrictChange]); // Dependencies
 
   return (
     <MapContainer

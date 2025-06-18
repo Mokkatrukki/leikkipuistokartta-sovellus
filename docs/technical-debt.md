@@ -47,6 +47,10 @@ This document lists areas of the codebase or features that could be improved, re
 
 ## Map Interaction & Visualization
 
+- **Header Playground Icon Tooltips:**
+  - The header displays icons for playgrounds in the current viewport district. These icons are clickable to `flyTo` the playground.
+  - *Future Improvements:* Add tooltips to these icons to show the playground's name on hover, improving usability.
+
 - **Centroid Calculation for Polygons (`getPointFromGeoJsonFeature`):**
   - The `getPointFromGeoJsonFeature` utility currently takes a simplified approach for non-Point geometries (e.g., first coordinate of a polygon).
   - *Future Improvements:*

@@ -2,22 +2,59 @@
 
 .app-container {
   display: flex;
+  flex-direction: column; /* Stack header and map vertically */
   height: 100vh;
-  width: 100vw;
+  /* width: 100vw; Remove to allow max-width to take effect */
+  max-width: 420px; /* Simulate mobile width */
+  margin: 0 auto; /* Center the app container */
+  border: 1px solid #ddd; /* Optional: device-like frame */
+  box-shadow: 0 0 10px rgba(0,0,0,0.1); /* Optional: subtle shadow */
   overflow: hidden; /* Prevent scrollbars on the body */
 }
 
+.app-header {
+  background-color: #f8f8f8;
+  padding: 5px 15px; /* Reduced padding to accommodate icons */
+  border-bottom: 1px solid #ddd;
+  text-align: center;
+  /* min-height, allow it to grow slightly if needed for icons */
+  min-height: 50px; 
+  display: flex;
+  flex-direction: column; /* Stack h1 and icons vertically */
+  align-items: center;
+  justify-content: center;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 1.2em;
+  color: #333;
+  line-height: 1.1; /* Adjust if icons make header too tall */
+}
+
+.playground-icons {
+  margin-top: 4px; /* Space between district name and icons */
+  line-height: 1; /* Prevent extra space from line height of icons */
+  max-width: 100%; /* Ensure icons wrap if too many */
+  overflow: hidden; /* Hide overflow if not wrapping as expected */
+  text-overflow: ellipsis; /* Add ellipsis if icons are too many to fit */
+  white-space: nowrap; /* Initially prevent wrapping, rely on overflow for now */
+  font-size: 0.8em; /* Make icons slightly smaller */
+}
+
 .map-panel {
-  flex: 2; /* Map takes up 2/3 of the space */
-  height: 100%;
-  overflow: hidden; /* Ensure map doesn't cause scrollbars if it tries to exceed panel */
+  flex: 1; /* Map takes up remaining space */
+  /* height: 100%; No longer needed as flex item will fill */
+  overflow: hidden; /* Ensure map doesn't cause scrollbars */
+  position: relative; /* For potential absolute positioned elements inside later */
 }
 
 .info-panel {
-  flex: 1; /* Info panel takes up 1/3 of the space */
-  height: 100vh; /* Full viewport height */
-  overflow-y: auto; /* Allow scrolling within the info panel if content exceeds height */
+  /* flex: 1; */ /* Temporarily remove flex property */
+  display: none; /* Hide InfoPanel for now to focus on mobile map view */
+  /* height: 100vh; */
+  overflow-y: auto;
   padding: 10px;
   border-left: 1px solid #ccc;
-  box-sizing: border-box; /* Include padding and border in the element's total width and height */
+  box-sizing: border-box;
 }

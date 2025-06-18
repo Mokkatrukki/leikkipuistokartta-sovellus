@@ -78,6 +78,17 @@ This document logs significant design decisions, architectural changes, and reas
         - `turf.booleanPointInPolygon()` is now used to accurately determine if a playground's point (or centroid) is within a district's actual geometry.
     - This significantly improves the accuracy of playground counts in district tooltips and the list of playgrounds displayed in the `InfoPanel` when a district is selected.
 
+- **Decision/Change (UI & UX Enhancement):** Initiated mobile-first UI adjustments and enhanced header interactivity.
+- **Reason:** To start shaping the application towards a mobile-friendly user experience and provide more dynamic, context-aware information in the header.
+- **Impact:**
+    - **Mobile View Simulation:** Modified `App.css` to constrain the main app container to a mobile-like width (420px), centered it, and temporarily hid the `InfoPanel` to focus on the map view. Added a basic app header structure in `App.tsx` and `App.css`.
+    - **Dynamic Header District Name:** Implemented logic for the header to display the name of the district currently at the map's center. `MapComponent` detects map movements, identifies the district at the center using Turf.js, and communicates this to `App.tsx` via a callback. `App.tsx` updates its state and the header display.
+    - **Viewport District Highlighting:** The district currently at the map's center (viewport district) is now styled differently (e.g., green outline) on the map for better visual feedback, distinct from the selected (clicked) district (blue outline) and default districts (red outline). This styling is handled in `MapComponent`'s `geoJsonDistrictStyle` function.
+    - **Default Map View:** Changed the default map center and zoom level in `MapComponent` to focus on Kuivasjärvi, Oulu, for a more personalized development starting point.
+    - **Interactive Header Playground Icons:** The app header now displays a series of placeholder icons (🏞️) representing the playgrounds in the current viewport district. Clicking an icon triggers a `flyTo` action to that specific playground on the map. This involved: 
+        - `MapComponent` sending the list of playground features in the viewport district to `App.tsx`.
+        - `App.tsx` storing these playground features and rendering clickable icons, using `setFocusedPlaygroundId` to initiate the `flyTo`.
+
 ## YYYY-MM-DD
 
 - **Decision/Change:** 
