@@ -2,7 +2,7 @@ import { MapContainer, TileLayer, Marker, Popup, GeoJSON } from 'react-leaflet';
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import type { Feature as GeoJsonFeature, GeoJsonObject, Point, Polygon, MultiPolygon, Position } from 'geojson'; // For casting and Turf.js types
-import * as turf from '@turf/turf';
+import { booleanPointInPolygon, centroid, point as turfPoint } from '@turf/turf';
 
 // Fix for default marker icon issue with Webpack/Vite
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -101,12 +101,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
         } else if (pg.geometry.type === 'Polygon' || pg.geometry.type === 'MultiPolygon') {
           // turf.centroid expects a Feature, not just Geometry
           const pgFeature = pg as GeoJsonFeature<Polygon | MultiPolygon>; 
-          pointToCheckForBoolean = turf.centroid(pgFeature);
+          pointToCheckForBoolean = centroid(pgFeature);
         }
 
         if (!pointToCheckForBoolean) return false;
         // 'feature' here is the district feature (already a GeoJSON Feature object)
-        return turf.booleanPointInPolygon(pointToCheckForBoolean, feature as GeoJsonFeature<Polygon | MultiPolygon>);
+        return booleanPointInPolygon(pointToCheckForBoolean, feature as GeoJsonFeature<Polygon | MultiPolygon>);
       }) || [];
       onDistrictSelect(feature, playgroundsInClickedDistrict as CityGeoJsonFeature[]); // Cast result
     });
@@ -135,12 +135,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
                   pointToCheckForBoolean = pg.geometry.coordinates as Position;
                 } else if (pg.geometry.type === 'Polygon' || pg.geometry.type === 'MultiPolygon') {
                   const pgFeature = pg as GeoJsonFeature<Polygon | MultiPolygon>;
-                  pointToCheckForBoolean = turf.centroid(pgFeature);
+                  pointToCheckForBoolean = centroid(pgFeature);
                 }
 
                 if (!pointToCheckForBoolean) return false;
                 // 'layerFeature' here is the district feature (already a GeoJSON Feature object)
-                return turf.booleanPointInPolygon(pointToCheckForBoolean, layerFeature as GeoJsonFeature<Polygon | MultiPolygon>);
+                return booleanPointInPolygon(pointToCheckForBoolean, layerFeature as GeoJsonFeature<Polygon | MultiPolygon>);
               }).length;
             }
 
@@ -184,14 +184,14 @@ const MapComponent: React.FC<MapComponentProps> = ({
     const handleMoveEnd = () => {
       const center = map.getCenter();
       // Turf.js expects [longitude, latitude]
-      const centerPoint = turf.point([center.lng, center.lat]); 
+      const centerPoint = turfPoint([center.lng, center.lat]); 
 
       let currentDistrictName: string | null = null;
       for (const district of districtsData.features) {
         // Ensure district is a valid GeoJSON Feature with Polygon or MultiPolygon geometry for Turf
         if (district.geometry && (district.geometry.type === 'Polygon' || district.geometry.type === 'MultiPolygon')) {
           const districtFeature = district as GeoJsonFeature<Polygon | MultiPolygon>;
-          if (turf.booleanPointInPolygon(centerPoint, districtFeature)) {
+          if (booleanPointInPolygon(centerPoint, districtFeature)) {
             currentDistrictName = district.properties?.name || district.properties?.NIMI || district.properties?.Aj_kaupu_1 || 'Unknown District';
             break; // Found the district
           }
@@ -207,10 +207,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
             if (pg.geometry.type === 'Point') {
               pointToCheck = pg.geometry.coordinates as Position;
             } else if (pg.geometry.type === 'Polygon' || pg.geometry.type === 'MultiPolygon') {
-              pointToCheck = turf.centroid(pg as GeoJsonFeature<Polygon | MultiPolygon>);
+              pointToCheck = centroid(pg as GeoJsonFeature<Polygon | MultiPolygon>);
             }
             // Ensure the playground feature is a valid GeoJSON feature for Turf
-            return pointToCheck && turf.booleanPointInPolygon(pointToCheck, currentDistrictFeature as GeoJsonFeature<Polygon | MultiPolygon>);
+            return pointToCheck && booleanPointInPolygon(pointToCheck, currentDistrictFeature as GeoJsonFeature<Polygon | MultiPolygon>);
           }) as CityGeoJsonFeature[]; // Cast the result
         }
       }
