@@ -9,6 +9,7 @@ This document provides more detailed information about the technologies used and
 - **Vite**: Build tool for fast development and optimized production builds. Manages module bundling, HMR (Hot Module Replacement), and serving.
 - **Tailwind CSS (v4.x.x via @tailwindcss/vite)**: Utility-first CSS framework for rapid UI development. Configured via `tailwind.config.js` and integrated into Vite via `@tailwindcss/vite` plugin.
 - **Leaflet & react-leaflet (v1.9.4 & v5.0.0)**: Integrated for interactive map display. Basic map display centered on Oulu, with GeoJSON overlay for city districts (`city-districts.geojson`). A marker is implemented.
+- **@turf/turf**: Geospatial analysis library used for accurate point-in-polygon calculations (e.g., determining if a playground is within a district) and for calculating centroids of polygon features.
 - **vite-plugin-pwa**: (To be integrated) For Progressive Web App features.
 - **clsx**: (To be integrated, if needed) For conditionally joining class names.
 - **uuid**: (To be integrated, if needed) For generating unique identifiers.

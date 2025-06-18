@@ -68,6 +68,16 @@ This document logs significant design decisions, architectural changes, and reas
     - Overall application structure is cleaner, with a more centralized and predictable data flow.
     - Dependency on `osmtogeojson` is effectively removed as direct Overpass API conversion is no longer performed client-side for primary data loading.
 
+- **Decision/Change (Accuracy Improvement):** Integrated Turf.js (`@turf/turf`) to perform accurate point-in-polygon checks for associating playgrounds with districts.
+- **Reason:** The previous method of using a district's rectangular bounding box for containment checks was fast but could lead to inaccuracies for irregularly shaped districts, potentially misassigning playgrounds near borders. Turf.js provides precise geospatial operations.
+- **Impact:**
+    - Added `@turf/turf` dependency.
+    - Modified `MapComponent.tsx` in two areas (district click handler and tooltip generation effect):
+        - For playground points, their coordinates are used directly.
+        - For playground polygons/multipolygons, `turf.centroid()` is used to find a representative point.
+        - `turf.booleanPointInPolygon()` is now used to accurately determine if a playground's point (or centroid) is within a district's actual geometry.
+    - This significantly improves the accuracy of playground counts in district tooltips and the list of playgrounds displayed in the `InfoPanel` when a district is selected.
+
 ## YYYY-MM-DD
 
 - **Decision/Change:** 

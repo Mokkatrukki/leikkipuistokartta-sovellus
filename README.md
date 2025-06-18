@@ -22,7 +22,7 @@ An interactive, family-friendly web app that encourages kids and parents to visi
 ## 🧱 Tech Stack
 
 - **Frontend:** React + TypeScript + Vite
-- **Map:** Leaflet + react-leaflet + OSM tiles
+- **Map:** Leaflet + react-leaflet + OSM tiles + Turf.js (for geospatial analysis)
 - **Auth & Backend:** Firebase (Auth + Firestore)
 - **Hosting:** Firebase Hosting
 - **Offline support:** PWA via vite-plugin-pwa

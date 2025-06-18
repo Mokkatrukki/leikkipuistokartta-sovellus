@@ -1,7 +1,8 @@
 import { MapContainer, TileLayer, Marker, Popup, GeoJSON } from 'react-leaflet';
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
-import type { Feature as GeoJsonFeatureType, GeoJsonObject } from 'geojson'; // For casting
+import type { Feature as GeoJsonFeature, GeoJsonObject, Point, Polygon, MultiPolygon, Position } from 'geojson'; // For casting and Turf.js types
+import * as turf from '@turf/turf';
 
 // Fix for default marker icon issue with Webpack/Vite
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -65,15 +66,21 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
     layer.on('click', () => {
       const playgroundsInClickedDistrict = playgroundsData?.features.filter(pg => {
-        const pgPoint = getPointFromGeoJsonFeature(pg as CityGeoJsonFeature); // Cast pg
-        if (pgPoint && feature.geometry) {
-          // Create a temporary GeoJSON layer for the district to use its bounds
-          const districtLayerForBounds = L.geoJSON(feature as GeoJsonFeatureType); 
-          if (districtLayerForBounds.getBounds().contains(pgPoint)) {
-            return true;
-          }
+        if (!pg.geometry || !feature.geometry) return false;
+
+        let pointToCheckForBoolean: GeoJsonFeature<Point> | Position | null = null;
+
+        if (pg.geometry.type === 'Point') {
+          pointToCheckForBoolean = pg.geometry.coordinates as Position;
+        } else if (pg.geometry.type === 'Polygon' || pg.geometry.type === 'MultiPolygon') {
+          // turf.centroid expects a Feature, not just Geometry
+          const pgFeature = pg as GeoJsonFeature<Polygon | MultiPolygon>; 
+          pointToCheckForBoolean = turf.centroid(pgFeature);
         }
-        return false;
+
+        if (!pointToCheckForBoolean) return false;
+        // 'feature' here is the district feature (already a GeoJSON Feature object)
+        return turf.booleanPointInPolygon(pointToCheckForBoolean, feature as GeoJsonFeature<Polygon | MultiPolygon>);
       }) || [];
       onDistrictSelect(feature, playgroundsInClickedDistrict as CityGeoJsonFeature[]); // Cast result
     });
@@ -90,13 +97,24 @@ const MapComponent: React.FC<MapComponentProps> = ({
             const districtNameKey = props.name || props.NIMI || props.Aj_kaupu_1 || 'Unknown District';
             let newTooltipContent = districtNameKey;
 
-            // Calculate playgrounds within this district feature
+            // Calculate playgrounds within this district feature using Turf.js
             let playgroundsInDistrictCount = 0;
             if (playgroundsData?.features && layerFeature.geometry) {
-              const districtLayerForBoundsCheck = L.geoJSON(layerFeature as GeoJsonFeatureType);
               playgroundsInDistrictCount = playgroundsData.features.filter(pg => {
-                const pgPoint = getPointFromGeoJsonFeature(pg as CityGeoJsonFeature);
-                return pgPoint && districtLayerForBoundsCheck.getBounds().contains(pgPoint);
+                if (!pg.geometry || !layerFeature.geometry) return false;
+
+                let pointToCheckForBoolean: GeoJsonFeature<Point> | Position | null = null;
+
+                if (pg.geometry.type === 'Point') {
+                  pointToCheckForBoolean = pg.geometry.coordinates as Position;
+                } else if (pg.geometry.type === 'Polygon' || pg.geometry.type === 'MultiPolygon') {
+                  const pgFeature = pg as GeoJsonFeature<Polygon | MultiPolygon>;
+                  pointToCheckForBoolean = turf.centroid(pgFeature);
+                }
+
+                if (!pointToCheckForBoolean) return false;
+                // 'layerFeature' here is the district feature (already a GeoJSON Feature object)
+                return turf.booleanPointInPolygon(pointToCheckForBoolean, layerFeature as GeoJsonFeature<Polygon | MultiPolygon>);
               }).length;
             }
 
@@ -153,8 +171,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
         <GeoJSON
           key={selectedDistrictFeature ? `district-${selectedDistrictFeature.id}` : 'districts'} // Force re-render on selection change for style
           data={districtsData as GeoJsonObject}
-          style={geoJsonDistrictStyle as L.StyleFunction<GeoJsonFeatureType>}
-          onEachFeature={onEachDistrictFeature as (feature: GeoJsonFeatureType, layer: L.Layer) => void}
+          style={geoJsonDistrictStyle as L.StyleFunction<GeoJsonFeature>}
+          onEachFeature={onEachDistrictFeature as (feature: GeoJsonFeature, layer: L.Layer) => void}
         />
       )}
       {!loading && playgroundsData && (
