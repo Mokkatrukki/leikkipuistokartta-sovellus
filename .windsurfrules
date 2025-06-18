@@ -1,0 +1,62 @@
+# Windsurf Rules for Playground Conquest App
+
+## General Guidelines
+
+- Use **TypeScript** for all source code.
+- Follow **React** best practices with functional components and hooks.
+- Utilize **Leaflet** via `react-leaflet` for map functionalities.
+- Implement **Firebase** for authentication and Firestore for data storage.
+- Design the UI to be **child-friendly**, with clear visuals and intuitive interactions.
+
+## Code Style
+
+- Adopt **PascalCase** for component names and **camelCase** for variables and functions.
+- Maintain a maximum line length of **80 characters**.
+- Use **2-space indentation**.
+- Prefer **arrow functions** for callbacks and inline functions.
+- Ensure all files end with a single newline character.
+
+## Project Structure
+
+- Organize components within the `src/components/` directory.
+- Place pages in the `src/pages/` directory.
+- Store custom hooks in `src/hooks/`.
+- Keep utility functions in `src/utils/`.
+
+## Firebase Integration
+
+- Structure Firestore documents as follows:
+  - `users/{userId}/conquests/{playgroundId}`
+- Use **anonymous authentication** by default, with options for OAuth providers.
+- Secure Firestore rules to ensure users can only access their own data.
+
+## Progressive Web App (PWA)
+
+- Implement PWA capabilities using `vite-plugin-pwa`.
+- Ensure offline support for map viewing and conquest tracking.
+
+## Mobile Support
+
+- Prepare for future mobile deployment using **Capacitor.js**.
+- Design responsive layouts suitable for various screen sizes.
+
+## Testing
+
+- Write unit tests using **Vitest** for critical components and functions.
+- Place test files alongside their corresponding source files with a `.test.tsx` or `.test.ts` extension.
+
+## Commit Conventions
+
+- Follow the **Conventional Commits** specification:
+  - `feat`: Introduce new features.
+  - `fix`: Bug fixes.
+  - `docs`: Documentation changes.
+  - `style`: Code style changes (formatting, missing semicolons, etc.).
+  - `refactor`: Code restructuring without changing functionality.
+  - `test`: Adding or updating tests.
+  - `chore`: Maintenance tasks.
+
+## Deployment
+
+- Deploy the application using **Firebase Hosting**.
+- Utilize the default domain provided by Firebase or configure a custom domain as needed.
