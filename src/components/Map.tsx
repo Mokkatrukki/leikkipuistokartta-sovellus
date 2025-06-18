@@ -2,7 +2,9 @@ import { MapContainer, TileLayer, Marker, Popup, GeoJSON } from 'react-leaflet';
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import type { Feature as GeoJsonFeature, GeoJsonObject, Point, Polygon, MultiPolygon, Position } from 'geojson'; // For casting and Turf.js types
-import { booleanPointInPolygon, centroid, point as turfPoint } from '@turf/turf';
+import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
+import centroid from '@turf/centroid';
+import { point as turfPoint } from '@turf/helpers';
 
 // Fix for default marker icon issue with Webpack/Vite
 delete (L.Icon.Default.prototype as any)._getIconUrl;
