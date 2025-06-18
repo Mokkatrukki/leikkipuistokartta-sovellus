@@ -18,7 +18,10 @@ export function useCityData(cityName: string) {
     }
 
     setLoading(true);
-    const filePath = `/data/${cityName.toLowerCase()}.geojson`;
+    // import.meta.env.BASE_URL includes the trailing slash if not root (e.g., /repo/)
+// Ensure the relative path part does not start with a slash to avoid double slashes.
+const relativePath = `data/${cityName.toLowerCase()}.geojson`;
+const filePath = `${import.meta.env.BASE_URL}${relativePath}`;
 
     console.log(`[useCityData] Fetching data for ${cityName} from ${filePath}`);
 
@@ -62,7 +65,7 @@ export function useCityData(cityName: string) {
   const playgroundsData = useMemo<CityGeoJsonData | null>(() => {
     if (!cityData || !cityData.features) return null;
     const features = cityData.features.filter(
-      (feature) =>
+      (feature: CityGeoJsonFeature) =>
         feature.properties?.leisure === 'playground' &&
         feature.properties?.access !== 'private',
     );
@@ -77,7 +80,7 @@ export function useCityData(cityName: string) {
   const districtsData = useMemo<CityGeoJsonData | null>(() => {
     if (!cityData || !cityData.features) return null;
     const features = cityData.features.filter(
-      (feature) =>
+      (feature: CityGeoJsonFeature) =>
         feature.properties?.boundary === 'administrative' &&
         feature.properties?.admin_level === '10',
     );
